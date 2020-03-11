@@ -1125,12 +1125,22 @@ Type OperationTyper::BigIntAdd(Type lhs, Type rhs) {
   return Type::BigInt();
 }
 
+Type OperationTyper::BigIntSubtract(Type lhs, Type rhs) {
+  if (lhs.IsNone() || rhs.IsNone()) return Type::None();
+  return Type::BigInt();
+}
+
 Type OperationTyper::BigIntNegate(Type type) {
   if (type.IsNone()) return type;
   return Type::BigInt();
 }
 
 Type OperationTyper::SpeculativeBigIntAdd(Type lhs, Type rhs) {
+  if (lhs.IsNone() || rhs.IsNone()) return Type::None();
+  return Type::BigInt();
+}
+
+Type OperationTyper::SpeculativeBigIntSubtract(Type lhs, Type rhs) {
   if (lhs.IsNone() || rhs.IsNone()) return Type::None();
   return Type::BigInt();
 }
@@ -1235,9 +1245,11 @@ Type OperationTyper::StrictEqual(Type lhs, Type rhs) {
   if ((lhs.Is(Type::Hole()) || rhs.Is(Type::Hole())) && !lhs.Maybe(rhs)) {
     return singleton_false();
   }
-  if (lhs.IsHeapConstant() && rhs.Is(lhs)) {
+  if (lhs.IsSingleton() && rhs.Is(lhs)) {
     // Types are equal and are inhabited only by a single semantic value,
     // which is not nan due to the earlier check.
+    DCHECK(lhs.Is(rhs));
+    DCHECK(lhs.Is(Type::NonInternal()) || lhs.Is(Type::Hole()));
     return singleton_true();
   }
   return Type::Boolean();
@@ -1249,6 +1261,9 @@ Type OperationTyper::CheckBounds(Type index, Type length) {
   Type mask = Type::Range(0.0, length.Max() - 1, zone());
   if (index.Maybe(Type::MinusZero())) {
     index = Type::Union(index, cache_->kSingletonZero, zone());
+  }
+  if (index.Maybe(Type::String())) {
+    index = Type::Union(index, cache_->kIntPtr, zone());
   }
   return Type::Intersect(index, mask, zone());
 }
