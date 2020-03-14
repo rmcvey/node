@@ -23,6 +23,8 @@
 !.eslintrc.yaml
 !.cpplint
 
+lib/_third_party_main.js
+
 # === Rules for root dir ===
 /core
 /vgcore.*

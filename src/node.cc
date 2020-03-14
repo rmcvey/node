@@ -445,7 +445,8 @@ MaybeLocal<Value> StartMainThreadExecution(Environment* env) {
   }
 
   if (env->options()->force_repl || uv_guess_handle(STDIN_FILENO) == UV_TTY) {
-    return StartExecution(env, "internal/main/repl");
+    // @chromascope disable repl
+    // return StartExecution(env, "internal/main/repl");
   }
 
   return StartExecution(env, "internal/main/eval_stdin");
