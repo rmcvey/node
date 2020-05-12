@@ -887,22 +887,22 @@ void Init(int* argc,
     fprintf(stderr, "%s: %s\n", argv_.at(0).c_str(), error.c_str());
   if (exit_code != 0) exit(exit_code);
 
-  if (per_process::cli_options->print_version) {
-    printf("%s\n", NODE_VERSION);
-    exit(0);
-  }
+  // if (per_process::cli_options->print_version) {
+  //   printf("%s\n", NODE_VERSION);
+  //   exit(0);
+  // }
 
-  if (per_process::cli_options->print_bash_completion) {
-    std::string completion = options_parser::GetBashCompletion();
-    printf("%s\n", completion.c_str());
-    exit(0);
-  }
+  // if (per_process::cli_options->print_bash_completion) {
+  //   std::string completion = options_parser::GetBashCompletion();
+  //   printf("%s\n", completion.c_str());
+  //   exit(0);
+  // }
 
-  if (per_process::cli_options->print_v8_help) {
-    // Doesn't return.
-    V8::SetFlagsFromString("--help", static_cast<size_t>(6));
-    UNREACHABLE();
-  }
+  // if (per_process::cli_options->print_v8_help) {
+  //   // Doesn't return.
+  //   V8::SetFlagsFromString("--help", static_cast<size_t>(6));
+  //   UNREACHABLE();
+  // }
 
   *argc = argv_.size();
   *exec_argc = exec_argv_.size();
