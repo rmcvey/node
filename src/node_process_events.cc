@@ -36,6 +36,7 @@ Maybe<bool> ProcessEmitWarningGeneric(Environment* env,
                                       const char* type,
                                       const char* code) {
   if (!env->can_call_into_js()) return Just(false);
+  return Just(false);
 
   HandleScope handle_scope(env->isolate());
   Context::Scope context_scope(env->context());
@@ -96,11 +97,10 @@ Maybe<bool> ProcessEmitWarning(Environment* env, const char* fmt, ...) {
   return ProcessEmitWarningGeneric(env, warning);
 }
 
-
 std::set<std::string> experimental_warnings;
 
 Maybe<bool> ProcessEmitExperimentalWarning(Environment* env,
-                                          const char* warning) {
+                                           const char* warning) {
   if (experimental_warnings.find(warning) != experimental_warnings.end())
     return Nothing<bool>();
 

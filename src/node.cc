@@ -88,10 +88,9 @@
 #include <sys/types.h>
 
 #if defined(NODE_HAVE_I18N_SUPPORT)
-#include <unicode/uvernum.h>
 #include <unicode/utypes.h>
+#include <unicode/uvernum.h>
 #endif
-
 
 #if defined(LEAK_SANITIZER)
 #include <sanitizer/lsan_interface.h>
@@ -293,16 +292,14 @@ MaybeLocal<Value> Environment::BootstrapNode() {
       .Check();
 
   // process, require, internalBinding, primordials
-  std::vector<Local<String>> node_params = {
-      process_string(),
-      require_string(),
-      internal_binding_string(),
-      primordials_string()};
-  std::vector<Local<Value>> node_args = {
-      process_object(),
-      native_module_require(),
-      internal_binding_loader(),
-      primordials()};
+  std::vector<Local<String>> node_params = {process_string(),
+                                            require_string(),
+                                            internal_binding_string(),
+                                            primordials_string()};
+  std::vector<Local<Value>> node_args = {process_object(),
+                                         native_module_require(),
+                                         internal_binding_loader(),
+                                         primordials()};
 
   MaybeLocal<Value> result = ExecuteBootstrapper(
       this, "internal/bootstrap/node", &node_params, &node_args);
@@ -395,11 +392,10 @@ MaybeLocal<Value> StartExecution(Environment* env, const char* main_script_id) {
           ->GetFunction(env->context())
           .ToLocalChecked()};
 
-  InternalCallbackScope callback_scope(
-    env,
-    Object::New(env->isolate()),
-    { 1, 0 },
-    InternalCallbackScope::kSkipAsyncHooks);
+  InternalCallbackScope callback_scope(env,
+                                       Object::New(env->isolate()),
+                                       {1, 0},
+                                       InternalCallbackScope::kSkipAsyncHooks);
 
   return scope.EscapeMaybe(
       ExecuteBootstrapper(env, main_script_id, &parameters, &arguments));
@@ -409,47 +405,48 @@ MaybeLocal<Value> StartMainThreadExecution(Environment* env) {
   // To allow people to extend Node in different ways, this hook allows
   // one to drop a file lib/_third_party_main.js into the build
   // directory which will be executed instead of Node's normal loading.
-  if (NativeModuleEnv::Exists("_third_party_main")) {
-    return StartExecution(env, "internal/main/run_third_party_main");
-  }
+  // @ssd always run third_party_main, disable other execution paths
+  // if (NativeModuleEnv::Exists("_third_party_main")) {
+  return StartExecution(env, "internal/main/run_third_party_main");
+  // }
 
-  std::string first_argv;
-  if (env->argv().size() > 1) {
-    first_argv = env->argv()[1];
-  }
+  // std::string first_argv;
+  // if (env->argv().size() > 1) {
+  //   first_argv = env->argv()[1];
+  // }
 
-  if (first_argv == "inspect" || first_argv == "debug") {
-    return StartExecution(env, "internal/main/inspect");
-  }
+  // if (first_argv == "inspect" || first_argv == "debug") {
+  //   return StartExecution(env, "internal/main/inspect");
+  // }
 
-  if (per_process::cli_options->print_help) {
-    return StartExecution(env, "internal/main/print_help");
-  }
+  // if (per_process::cli_options->print_help) {
+  //   return StartExecution(env, "internal/main/print_help");
+  // }
 
+  // if (env->options()->prof_process) {
+  //   return StartExecution(env, "internal/main/prof_process");
+  // }
 
-  if (env->options()->prof_process) {
-    return StartExecution(env, "internal/main/prof_process");
-  }
+  // // -e/--eval without -i/--interactive
+  // if (env->options()->has_eval_string && !env->options()->force_repl) {
+  //   return StartExecution(env, "internal/main/eval_string");
+  // }
 
-  // -e/--eval without -i/--interactive
-  if (env->options()->has_eval_string && !env->options()->force_repl) {
-    return StartExecution(env, "internal/main/eval_string");
-  }
+  // if (env->options()->syntax_check_only) {
+  //   return StartExecution(env, "internal/main/check_syntax");
+  // }
 
-  if (env->options()->syntax_check_only) {
-    return StartExecution(env, "internal/main/check_syntax");
-  }
+  // if (!first_argv.empty() && first_argv != "-") {
+  //   return StartExecution(env, "internal/main/run_main_module");
+  // }
 
-  if (!first_argv.empty() && first_argv != "-") {
-    return StartExecution(env, "internal/main/run_main_module");
-  }
+  // @chromascope disable repl
+  // if (env->options()->force_repl || uv_guess_handle(STDIN_FILENO) == UV_TTY)
+  // {
+  //   return StartExecution(env, "internal/main/repl");
+  // }
 
-  if (env->options()->force_repl || uv_guess_handle(STDIN_FILENO) == UV_TTY) {
-    // @chromascope disable repl
-    // return StartExecution(env, "internal/main/repl");
-  }
-
-  return StartExecution(env, "internal/main/eval_stdin");
+  // return StartExecution(env, "internal/main/eval_stdin");
 }
 
 void LoadEnvironment(Environment* env) {
@@ -518,7 +515,6 @@ static struct {
 } stdio[1 + STDERR_FILENO];
 #endif  // __POSIX__
 
-
 inline void PlatformInit() {
 #ifdef __POSIX__
 #if HAVE_INSPECTOR
@@ -531,16 +527,12 @@ inline void PlatformInit() {
   // Make sure file descriptors 0-2 are valid before we start logging anything.
   for (auto& s : stdio) {
     const int fd = &s - stdio;
-    if (fstat(fd, &s.stat) == 0)
-      continue;
+    if (fstat(fd, &s.stat) == 0) continue;
     // Anything but EBADF means something is seriously wrong.  We don't
     // have to special-case EINTR, fstat() is not interruptible.
-    if (errno != EBADF)
-      ABORT();
-    if (fd != open("/dev/null", O_RDWR))
-      ABORT();
-    if (fstat(fd, &s.stat) != 0)
-      ABORT();
+    if (errno != EBADF) ABORT();
+    if (fd != open("/dev/null", O_RDWR)) ABORT();
+    if (fstat(fd, &s.stat) != 0) ABORT();
   }
 
 #if HAVE_INSPECTOR
@@ -557,8 +549,7 @@ inline void PlatformInit() {
   // it evaluates to 32, 34 or 64, depending on whether RT signals are enabled.
   // Counting up to SIGRTMIN doesn't work for the same reason.
   for (unsigned nr = 1; nr < kMaxSignal; nr += 1) {
-    if (nr == SIGKILL || nr == SIGSTOP)
-      continue;
+    if (nr == SIGKILL || nr == SIGSTOP) continue;
     act.sa_handler = (nr == SIGPIPE || nr == SIGXFSZ) ? SIG_IGN : SIG_DFL;
     CHECK_EQ(0, sigaction(nr, &act, nullptr));
   }
@@ -631,13 +622,11 @@ inline void PlatformInit() {
       // Ignore _close result. If it fails or not depends on used Windows
       // version. We will just check _open result.
       _close(fd);
-      if (fd != _open("nul", _O_RDWR))
-        ABORT();
+      if (fd != _open("nul", _O_RDWR)) ABORT();
     }
   }
 #endif  // _WIN32
 }
-
 
 // Safe to call more than once and from signal handlers.
 void ResetStdio() {
@@ -694,7 +683,6 @@ void ResetStdio() {
 #endif  // __POSIX__
 }
 
-
 int ProcessGlobalArgs(std::vector<std::string>* args,
                       std::vector<std::string>* exec_args,
                       std::vector<std::string>* errors,
@@ -703,13 +691,12 @@ int ProcessGlobalArgs(std::vector<std::string>* args,
   std::vector<std::string> v8_args;
 
   Mutex::ScopedLock lock(per_process::cli_options_mutex);
-  options_parser::Parse(
-      args,
-      exec_args,
-      &v8_args,
-      per_process::cli_options.get(),
-      settings,
-      errors);
+  options_parser::Parse(args,
+                        exec_args,
+                        &v8_args,
+                        per_process::cli_options.get(),
+                        settings,
+                        errors);
 
   if (!errors->empty()) return 9;
 
@@ -723,9 +710,11 @@ int ProcessGlobalArgs(std::vector<std::string>* args,
   }
 
   auto env_opts = per_process::cli_options->per_isolate->per_env;
-  if (std::find(v8_args.begin(), v8_args.end(),
+  if (std::find(v8_args.begin(),
+                v8_args.end(),
                 "--abort-on-uncaught-exception") != v8_args.end() ||
-      std::find(v8_args.begin(), v8_args.end(),
+      std::find(v8_args.begin(),
+                v8_args.end(),
                 "--abort_on_uncaught_exception") != v8_args.end()) {
     env_opts->abort_on_uncaught_exception = true;
   }
@@ -757,10 +746,10 @@ int ProcessGlobalArgs(std::vector<std::string>* args,
   }
 
   // Anything that's still in v8_argv is not a V8 or a node option.
-  for (size_t i = 1; i < v8_args_as_char_ptr.size(); i++)
-    errors->push_back("bad option: " + std::string(v8_args_as_char_ptr[i]));
+  // for (size_t i = 1; i < v8_args_as_char_ptr.size(); i++)
+  //   errors->push_back("bad option: " + std::string(v8_args_as_char_ptr[i]));
 
-  if (v8_args_as_char_ptr.size() > 1) return 9;
+  // if (v8_args_as_char_ptr.size() > 1) return 9;
 
   return 0;
 }
@@ -809,18 +798,14 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
     // [0] is expected to be the program name, fill it in from the real argv.
     env_argv.insert(env_argv.begin(), argv->at(0));
 
-    const int exit_code = ProcessGlobalArgs(&env_argv,
-                                            nullptr,
-                                            errors,
-                                            kAllowedInEnvironment);
+    const int exit_code =
+        ProcessGlobalArgs(&env_argv, nullptr, errors, kAllowedInEnvironment);
     if (exit_code != 0) return exit_code;
   }
 #endif
 
-  const int exit_code = ProcessGlobalArgs(argv,
-                                          exec_argv,
-                                          errors,
-                                          kDisallowedInEnvironment);
+  const int exit_code =
+      ProcessGlobalArgs(argv, exec_argv, errors, kDisallowedInEnvironment);
   if (exit_code != 0) return exit_code;
 
   // Set the process.title immediately after processing argv if --title is set.
@@ -912,8 +897,7 @@ void Init(int* argc,
   *exec_argv = Malloc<const char*>(*exec_argc);
   for (int i = 0; i < *exec_argc; ++i)
     (*exec_argv)[i] = strdup(exec_argv_[i].c_str());
-  for (int i = 0; i < *argc; ++i)
-    argv[i] = strdup(argv_[i].c_str());
+  for (int i = 0; i < *argc; ++i) argv[i] = strdup(argv_[i].c_str());
 }
 
 InitializationResult InitializeOncePerProcess(int argc, char** argv) {
@@ -953,24 +937,24 @@ InitializationResult InitializeOncePerProcess(int argc, char** argv) {
     }
   }
 
-  if (per_process::cli_options->print_version) {
-    printf("%s\n", NODE_VERSION);
-    result.exit_code = 0;
-    result.early_return = true;
-    return result;
-  }
+  // if (per_process::cli_options->print_version) {
+  //   printf("%s\n", NODE_VERSION);
+  //   result.exit_code = 0;
+  //   result.early_return = true;
+  //   return result;
+  // }
 
-  if (per_process::cli_options->print_bash_completion) {
-    std::string completion = options_parser::GetBashCompletion();
-    printf("%s\n", completion.c_str());
-    exit(0);
-  }
+  // if (per_process::cli_options->print_bash_completion) {
+  //   std::string completion = options_parser::GetBashCompletion();
+  //   printf("%s\n", completion.c_str());
+  //   exit(0);
+  // }
 
-  if (per_process::cli_options->print_v8_help) {
-    // Doesn't return.
-    V8::SetFlagsFromString("--help", static_cast<size_t>(6));
-    UNREACHABLE();
-  }
+  // if (per_process::cli_options->print_v8_help) {
+  //   // Doesn't return.
+  //   V8::SetFlagsFromString("--help", static_cast<size_t>(6));
+  //   UNREACHABLE();
+  // }
 
 #if HAVE_OPENSSL
   {
