@@ -15,3 +15,10 @@ steps:
     ./configure --without-npm --without-inspector
     make -j4
   displayName: 'Linux Build'
+- task: ArchiveFiles@2
+  inputs:
+    rootFolderOrFile: '$(Build.BinariesDirectory)/out/Release'
+    includeRootFolder: true
+    archiveType: 'zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+    replaceExistingArchive: true
