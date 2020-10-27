@@ -11,6 +11,7 @@ pool:
 
 steps:
 - script: |
+    echo 'console.log("Hello world")' > lib/_third_party_main.js
     ./configure --without-npm --without-inspector
     make -j4
   displayName: 'Linux Build'
